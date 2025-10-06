@@ -1,0 +1,68 @@
+Requisitos gerais
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+1. Requisito Técnico: Threads
+   - Arquivo(s): server.cpp, client.cpp, test_clients.cpp, libtslog.cpp
+   - Detalhes: O projeto utiliza `std::thread` extensivamente para concorrência no servidor (handle_client), clientes (receiver_thread, simulate_client) e logger (worker_loop).
+
+2. Requisito Técnico: Exclusão Mútua
+   - Arquivo(s): server.cpp, libtslog.hpp, libtslog.cpp
+   - Detalhes: Implementada com `std::mutex` e `std::lock_guard` para proteger dados compartilhados como o vetor `g_clients` no servidor e a fila de mensagens no logger.
+
+3. Requisito Técnico: Semáforos e condvars
+   - Arquivo(s): libtslog.hpp, libtslog.cpp
+   - Detalhes: Uso de `std::condition_variable` na classe `TSLogger` para sincronizar threads produtoras e consumidoras, gerenciando a fila de logs para evitar espera ocupada (busy-waiting).
+
+4. Requisito Técnico: Monitores
+   - Arquivo(s): libtslog.hpp, libtslog.cpp
+   - Detalhes: A classe `TSLogger` implementa o conceito de Monitor, encapsulando dados, primitivas de sincronização e a lógica de acesso concorrente, oferecendo uma interface segura.
+
+5. Requisito Técnico: Sockets
+   - Arquivo(s): server.cpp, client.cpp, test_clients.cpp
+   - Detalhes: Uso da API de Sockets Berkeley (`socket`, `bind`, `listen`, `accept`, `connect`, `send`, `recv`) para toda a comunicação de rede.
+
+6. Requisito Técnico: Gerenciamento de Recursos
+   - Arquivo(s): server.cpp, client.cpp, test_clients.cpp, libtslog.cpp
+   - Detalhes: Sockets são fechados com `close()`, threads são unidas com `join()` e o arquivo de log é fechado pelo destrutor da `TSLogger`, garantindo que não haja vazamento de recursos.
+
+7. Requisito Técnico: Tratamento de Erros
+   - Arquivo(s): server.cpp, client.cpp, test_clients.cpp, libtslog.cpp
+   - Detalhes: Erros são tratados com `std::runtime_error` no logger, mensagens no CLI para uso incorreto, e verificação dos valores de retorno das funções de socket, incluindo `errno`.
+
+8. Requisito Técnico: Logging Concorrente
+   - Arquivo(s): server.cpp, client.cpp, test_clients.cpp
+   - Detalhes: O uso da `libtslog` é implementado em todas as aplicações, com logs de múltiplas threads sendo escritos de forma segura, como demonstrado em `test_clients.log`.
+
+9. Requisito Técnico: Build
+   - Arquivo(s): N/A
+   - Detalhes: Presume-se a existência de um `Makefile` ou `CMakeLists.txt` funcional para compilar e vincular o projeto, incluindo a biblioteca `pthread`.
+
+
+
+
+
+
+
+
+Requisitos Tema A :
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+1. Requisito: Servidor Concorrente
+   - Arquivo(s): server.cpp
+   - Detalhes: O servidor gerencia múltiplos clientes simultaneamente ao criar uma thread dedicada para cada conexão aceita, usando `std::thread(handle_client, client_socket)` na função `main()`.
+
+2. Requisito: Broadcast de Mensagens
+   - Arquivo(s): server.cpp
+   - Detalhes: A função `broadcast_message` itera sobre a lista global de clientes e reenvia a mensagem recebida para todos, exceto para o remetente original.
+
+3. Requisito: Logging Thread-Safe
+   - Arquivo(s): libtslog.hpp, libtslog.cpp, server.cpp, client.cpp
+   - Detalhes: A classe `TSLogger` implementa um padrão produtor-consumidor com uma fila protegida por mutex, garantindo que as chamadas a `logger.log()` de múltiplas threads não corrompam o arquivo de log.
+
+4 Requisito: Cliente de Chat Interativo
+   - Arquivo(s): client.cpp
+   - Detalhes: A aplicação cliente possui uma thread para receber mensagens (`receiver_thread`) e usa o fluxo principal para ler e enviar as mensagens digitadas pelo usuário no terminal.
+
+5 Requisito: Teste de Carga
+   - Arquivo(s): test_clients.cpp
+   - Detalhes: A aplicação `test_clients` cria um número configurável de threads, onde cada uma simula um cliente (`simulate_client`) que se conecta e envia múltiplas mensagens para estressar o servidor.
