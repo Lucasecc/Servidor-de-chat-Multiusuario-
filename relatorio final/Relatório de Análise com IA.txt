@@ -1,0 +1,22 @@
+Contexto: Após a implementação do núcleo funcional do servidor e da biblioteca de logging, recorri a um assistente de IA (LLM) para realizar uma revisão de código focada em potenciais problemas de concorrência. O objetivo era usar a IA como uma "segunda opinião" para validar as escolhas de design e identificar possíveis race conditions, deadlocks ou gargalos de performance.
+
+Interação 1: Análise de Condição de Corrida (Race Condition)
+
+* Prompt Enviado à IA:
+"Analise meu código server.cpp. Eu uso um std::vector global (g_clients) para armazenar as conexões dos clientes, protegido por um std::mutex (g_clients_mutex). Minha preocupação é se o uso de std::lock_guard nas funções handle_client (ao adicionar/remover clientes) e broadcast_message (ao iterar) é suficiente para prevenir race conditions. Há algum cenário onde o acesso a g_clients não está seguro?"
+
+* Resumo das Sugestões da IA:
+A IA confirmou que a estratégia de uso do std::lock_guard estava correta e era a forma idiomática de garantir exclusão mútua em C++. Ela validou que não havia caminhos de código óbvios onde o vetor g_clients era acessado sem a devida proteção do mutex.
+
+Interação 2: Risco de Deadlock no Desligamento
+
+* Prompt Enviado à IA:
+"No meu server.cpp, implementei um desligamento gracioso com um signal_handler que seta uma flag atômica server_running para false. No final da função main, eu chamo join() em todas as threads de cliente. Se uma thread estiver bloqueada em uma chamada recv(), o join() nunca retornará, causando um deadlock. Como posso mitigar isso?"
+
+* Resumo das Sugestões da IA:
+A IA identificou corretamente o potencial de bloqueio indefinido e sugeriu duas abordagens que validaram a implementação existente:
+1. Timeout no Socket: Usar setsockopt com SO_RCVTIMEO no socket do cliente para que a chamada recv() não bloqueie indefinidamente, permitindo que o laço verifique a flag de execução periodicamente.
+2. Fechamento Explícito do Socket: Como garantia adicional, chamar shutdown() em todos os sockets de cliente antes de fazer o join() das threads. Isso força qualquer chamada recv() bloqueada a retornar, "acordando" a thread.
+
+Valor Agregado pelo Uso da IA:
+O uso da IA neste projeto foi para auditoria e validação. A principal vantagem foi obter uma análise de alta velocidade sobre problemas de concorrência complexos, o que aumentou a confiança na corretude do código e economizou tempo de depuração.

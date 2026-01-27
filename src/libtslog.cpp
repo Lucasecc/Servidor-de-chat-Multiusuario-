@@ -83,4 +83,4 @@ std::string TSLogger::level_to_string(Level l) {
     return "UNKNOWN";
 }
 
-} // namespace tslog
+}
