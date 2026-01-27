@@ -1,14 +1,33 @@
 CXX = g++
-CXXFLAGS = -std=c++17 -O2 -Wall -Iinclude
-SRC = src/libtslog.cpp
-EXAMPLE = examples/test_logging.cpp
+CXXFLAGS = -std=c++17 -O2 -Wall -Iinclude -pthread
+LDFLAGS = -pthread
 
-all: test_logging
+LIB_SRC = src/libtslog.cpp
+LIB_OBJ = $(LIB_SRC:.cpp=.o)
 
-test_logging: $(SRC) $(EXAMPLE)
-	$(CXX) $(CXXFLAGS) $(SRC) $(EXAMPLE) -o test_logging
+SERVER_SRC = src/server.cpp
+CLIENT_SRC = examples/client.cpp
+TEST_CLIENTS_SRC = examples/test_clients.cpp
 
-clean:
-	rm -f test_logging *.o *.log
+SERVER_EXE = server
+CLIENT_EXE = client
+TEST_CLIENTS_EXE = test_clients
 
 .PHONY: all clean
+
+all: $(SERVER_EXE) $(CLIENT_EXE) $(TEST_CLIENTS_EXE)
+
+$(LIB_OBJ): $(LIB_SRC)
+	$(CXX) $(CXXFLAGS) -c $(LIB_SRC) -o $(LIB_OBJ)
+
+$(SERVER_EXE): $(SERVER_SRC) $(LIB_OBJ)
+	$(CXX) $(CXXFLAGS) $(SERVER_SRC) $(LIB_OBJ) -o $(SERVER_EXE) $(LDFLAGS)
+
+$(CLIENT_EXE): $(CLIENT_SRC)
+	$(CXX) $(CXXFLAGS) $(CLIENT_SRC) -o $(CLIENT_EXE) $(LDFLAGS)
+
+$(TEST_CLIENTS_EXE): $(TEST_CLIENTS_SRC)
+	$(CXX) $(CXXFLAGS) $(TEST_CLIENTS_SRC) -o $(TEST_CLIENTS_EXE) $(LDFLAGS)
+
+clean:
+	rm -f $(SERVER_EXE) $(CLIENT_EXE) $(TEST_CLIENTS_EXE) src/*.o *.log
